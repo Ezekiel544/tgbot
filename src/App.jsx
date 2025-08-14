@@ -24,21 +24,30 @@ export default function App() {
   }, []);
 
   async function loadUser(id) {
-    const ref = doc(db, "users", id);
-    const snap = await getDoc(ref);
+    try {
+      const ref = doc(db, "users", id);
+      const snap = await getDoc(ref);
 
-    if (snap.exists()) {
-      setCoins(snap.data().coins || 0);
-    } else {
-      await setDoc(ref, { coins: 0 });
+      if (snap.exists()) {
+        setCoins(snap.data().coins || 0);
+      } else {
+        await setDoc(ref, { coins: 0 });
+        setCoins(0); // Ensure UI updates for new users
+      }
+    } catch (err) {
+      console.error("Firestore error:", err);
     }
   }
 
   async function addCoin() {
     if (!userId) return;
-    const ref = doc(db, "users", userId);
-    await updateDoc(ref, { coins: increment(1) });
-    setCoins(prev => prev + 1);
+    try {
+      const ref = doc(db, "users", userId);
+      await updateDoc(ref, { coins: increment(1) });
+      setCoins(prev => prev + 1);
+    } catch (err) {
+      console.error("Add coin error:", err);
+    }
   }
 
   return (
@@ -56,6 +65,7 @@ export default function App() {
           borderRadius: "5px"
         }}
         onClick={addCoin}
+        disabled={!userId}
       >
         +1 Coin
       </button>
