@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
+import { signInWithCustomToken } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 
 export default function App() {
@@ -7,13 +8,18 @@ export default function App() {
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    // Get user_id from URL
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("user_id");
-    setUserId(id);
+    const token = params.get("token");
 
-    if (id) {
-      loadUser(id);
+    if (token) {
+      // Sign in with Firebase custom token
+      signInWithCustomToken(auth, token)
+        .then(userCredential => {
+          const uid = userCredential.user.uid;
+          setUserId(uid);
+          loadUser(uid);
+        })
+        .catch(error => console.error("Auth error:", error));
     }
   }, []);
 
@@ -24,7 +30,6 @@ export default function App() {
     if (snap.exists()) {
       setCoins(snap.data().coins || 0);
     } else {
-      // Create user in DB
       await setDoc(ref, { coins: 0 });
     }
   }
