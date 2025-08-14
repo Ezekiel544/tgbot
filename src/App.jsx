@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: "1:826370102389:web:4d1755bc152b9d706ed43c"
 };
 
-// Fixed Firebase service class
+// Firebase service class
 class FirebaseService {
   constructor() {
     this.app = null;
@@ -20,30 +20,20 @@ class FirebaseService {
     this.initialized = false;
     this.isProduction = this.detectEnvironment();
     this.customToken = this.getCustomTokenFromURL();
-    
-    // Debug logging
-    console.log('🔧 Firebase Service initialized');
-    console.log('Environment:', this.isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
-    console.log('Custom token:', this.customToken ? 'Found' : 'Not found');
   }
 
   detectEnvironment() {
-    // For now, let's use a simpler detection that works with your setup
-    const hasCustomToken = this.getCustomTokenFromURL();
     const isProduction = window.location.hostname !== 'localhost' && 
-                        window.location.hostname !== '127.0.0.1';
+                        window.location.hostname !== '127.0.0.1' &&
+                        window.location.protocol === 'https:' &&
+                        window.Telegram?.WebApp;
     
-    console.log('Environment details:', {
-      hostname: window.location.hostname,
-      hasCustomToken: !!hasCustomToken,
-      hasTelegram: !!window.Telegram?.WebApp,
-      isProduction
-    });
-    
-    return isProduction || !!hasCustomToken; // Use Firebase if production OR has custom token
+    console.log('Environment detected:', isProduction ? 'PRODUCTION (Firebase)' : 'DEVELOPMENT (localStorage)');
+    return isProduction;
   }
 
   getCustomTokenFromURL() {
+    // Extract custom token from URL parameters (sent by Python bot)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     if (token) {
@@ -57,10 +47,20 @@ class FirebaseService {
     
     try {
       if (this.isProduction && this.customToken) {
+        // In production with real Firebase SDK:
+        // import { initializeApp } from 'firebase/app';
+        // import { getFirestore } from 'firebase/firestore';
+        // import { getAuth, signInWithCustomToken } from 'firebase/auth';
+        // 
+        // this.app = initializeApp(firebaseConfig);
+        // this.db = getFirestore(this.app);
+        // this.auth = getAuth(this.app);
+        // await signInWithCustomToken(this.auth, this.customToken);
+        
         console.log('🔥 Firebase initialized with custom token for PRODUCTION');
         console.log('🔐 User authenticated via Python bot');
       } else {
-        console.log('💾 Using localStorage for DEVELOPMENT/FALLBACK');
+        console.log('💾 Using localStorage for DEVELOPMENT');
       }
       
       this.initialized = true;
@@ -70,15 +70,8 @@ class FirebaseService {
     }
   }
 
-  // Use consistent storage keys
-  getUserStorageKey(userId) {
-    return this.isProduction ? `firebase_user_${userId}` : `user_${userId}`;
-  }
-
   async saveUserProgress(userId, userData) {
     await this.init();
-    
-    console.log('💾 Saving user progress:', { userId, userData, method: this.isProduction ? 'Firebase' : 'localStorage' });
     
     if (this.isProduction) {
       return await this.saveToFirebase(userId, userData);
@@ -90,8 +83,6 @@ class FirebaseService {
   async getUserProgress(userId) {
     await this.init();
     
-    console.log('📖 Loading user progress for:', userId, 'Method:', this.isProduction ? 'Firebase' : 'localStorage');
-    
     if (this.isProduction) {
       return await this.getFromFirebase(userId);
     } else {
@@ -101,7 +92,22 @@ class FirebaseService {
 
   async saveToFirebase(userId, userData) {
     try {
-      // Create consistent user document
+      // In production with real Firebase SDK and authentication:
+      // const userRef = doc(this.db, 'users', userId.toString());
+      // const userDoc = {
+      //   userId: userId,
+      //   points: userData.points,
+      //   level: userData.level,
+      //   lastPlayed: serverTimestamp(),
+      //   gamesPlayed: userData.gamesPlayed,
+      //   updatedAt: serverTimestamp(),
+      //   ...(userData.createdAt && { createdAt: serverTimestamp() })
+      // };
+      // await setDoc(userRef, userDoc, { merge: true });
+      
+      console.log('🔥 Saving to Firebase with authentication:', userData);
+      
+      // For demo, save to localStorage with Firebase structure
       const userDoc = {
         userId: userId,
         points: userData.points,
@@ -114,14 +120,10 @@ class FirebaseService {
         authenticated: !!this.customToken
       };
       
-      // Use consistent storage key
-      const storageKey = this.getUserStorageKey(userId);
-      localStorage.setItem(storageKey, JSON.stringify(userDoc));
-      
-      console.log('🔥 Saved to Firebase storage:', userDoc);
+      localStorage.setItem(`firebase_user_${userId}`, JSON.stringify(userDoc));
       
       // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       return { success: true, method: 'Firebase (authenticated)' };
     } catch (error) {
@@ -132,18 +134,24 @@ class FirebaseService {
 
   async getFromFirebase(userId) {
     try {
+      // In production with real Firebase SDK:
+      // const userRef = doc(this.db, 'users', userId.toString());
+      // const docSnap = await getDoc(userRef);
+      // if (docSnap.exists()) {
+      //   return docSnap.data();
+      // }
+      
       console.log('🔥 Loading from Firebase for authenticated user:', userId);
       
-      // Use consistent storage key
-      const storageKey = this.getUserStorageKey(userId);
-      const saved = localStorage.getItem(storageKey);
+      // For demo, try to load from localStorage
+      const saved = localStorage.getItem(`firebase_user_${userId}`);
       
       if (saved) {
         const userData = JSON.parse(saved);
-        console.log('📦 Found existing Firebase user data:', userData);
-        return { ...userData, source: 'Firebase (authenticated)' };
+        console.log('📦 Found existing authenticated user data:', userData);
+        return { ...userData, source: 'Firebase (authenticated cached)' };
       } else {
-        // Create new authenticated user with default values
+        // Create new authenticated user
         const newUser = {
           userId: userId,
           points: 0,
@@ -152,16 +160,11 @@ class FirebaseService {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           lastPlayed: new Date().toISOString(),
-          source: 'Firebase (new user)',
+          source: 'Firebase (authenticated new)',
           authenticated: !!this.customToken
         };
         
-        console.log('👤 Created new Firebase user:', newUser);
-        
-        // Save the new user immediately
-        const storageKey = this.getUserStorageKey(userId);
-        localStorage.setItem(storageKey, JSON.stringify(newUser));
-        
+        console.log('👤 Created new authenticated user:', newUser);
         return newUser;
       }
     } catch (error) {
@@ -184,9 +187,7 @@ class FirebaseService {
         source: 'localStorage'
       };
       
-      // Use consistent storage key
-      const storageKey = this.getUserStorageKey(userId);
-      localStorage.setItem(storageKey, JSON.stringify(userDoc));
+      localStorage.setItem(`user_${userId}`, JSON.stringify(userDoc));
       console.log('💾 Saved to localStorage:', userDoc);
       
       return { success: true, method: 'localStorage' };
@@ -198,9 +199,7 @@ class FirebaseService {
 
   async getFromLocalStorage(userId) {
     try {
-      // Use consistent storage key
-      const storageKey = this.getUserStorageKey(userId);
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(`user_${userId}`);
       
       if (saved) {
         const userData = JSON.parse(saved);
@@ -219,10 +218,6 @@ class FirebaseService {
         };
         
         console.log('💾 New user created in localStorage:', newUser);
-        
-        // Save the new user immediately
-        localStorage.setItem(storageKey, JSON.stringify(newUser));
-        
         return newUser;
       }
     } catch (error) {
@@ -235,6 +230,8 @@ class FirebaseService {
     await this.init();
     
     try {
+      // In production, this would query Firestore with orderBy and limit
+      // For demo, we'll simulate a leaderboard
       const mockLeaderboard = [
         { userId: 123456789, username: 'demo_user', points: 1500, level: 16 },
         { userId: 987654321, username: 'player2', points: 1200, level: 13 },
@@ -329,17 +326,13 @@ const TelegramMiniApp = () => {
     }
   }, []);
 
-  // Fixed handleTap function
   const handleTap = async () => {
     const pointsGained = level;
     const newPoints = points + pointsGained;
     const newLevel = Math.floor(newPoints / 100) + 1;
-    const newGamesPlayed = gamesPlayed + 1; // Increment games played on each tap
     
-    // Update state immediately for responsive UI
     setPoints(newPoints);
     setLevel(newLevel);
-    setGamesPlayed(newGamesPlayed);
     setClickAnimation(true);
     
     // Reset animation
@@ -352,17 +345,13 @@ const TelegramMiniApp = () => {
         const userData = {
           points: newPoints,
           level: newLevel,
-          gamesPlayed: newGamesPlayed, // Use the updated value
-          // Keep existing createdAt if it exists, otherwise set it now
-          createdAt: lastPlayed ? undefined : new Date().toISOString()
+          gamesPlayed: gamesPlayed,
+          createdAt: lastPlayed ? undefined : new Date().toISOString() // Only set on first play
         };
         
-        console.log('💾 Saving progress:', userData);
-        
-        const result = await firebaseService.saveUserProgress(user.id, userData);
+        await firebaseService.saveUserProgress(user.id, userData);
+        setGamesPlayed(prev => prev + 1);
         setLastPlayed(new Date().toISOString());
-        
-        console.log('✅ Progress saved successfully:', result);
         
         // Send data back to Telegram bot every 10 taps or level up
         if ((newPoints % 10 === 0) || (newLevel > level)) {
@@ -370,16 +359,13 @@ const TelegramMiniApp = () => {
             action: 'progress_update',
             points: newPoints,
             level: newLevel,
-            gamesPlayed: newGamesPlayed
+            gamesPlayed: gamesPlayed + 1
           });
         }
         
       } catch (error) {
-        console.error('❌ Failed to save progress:', error);
-        // Optionally revert state changes if save failed
-        // setPoints(points);
-        // setLevel(level);
-        // setGamesPlayed(gamesPlayed);
+        console.error('Failed to save progress:', error);
+        // You could show an error toast here
       } finally {
         setIsSaving(false);
       }
