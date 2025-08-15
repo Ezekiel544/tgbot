@@ -365,7 +365,7 @@ const TelegramMiniApp = () => {
           createdAt: !lastPlayed // Only set createdAt for new users
         };
         
-        await firebaseService.saveUserProgress(user.id, userData, customToken);
+        await firebaseService.saveUserProgress(user.id, userData);
         
         setLastPlayed(new Date().toISOString());
         
