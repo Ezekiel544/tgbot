@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, User } from 'lucide-react';
+ import { initializeApp } from 'firebase/app';
+ import { getFirestore ,doc, setDoc, getDoc,serverTimestamp} from 'firebase/firestore';
+  import { getAuth, signInWithCustomToken } from 'firebase/auth';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -48,14 +51,12 @@ class FirebaseService {
     try {
       if (this.isProduction && this.customToken) {
         // In production with real Firebase SDK:
-        // import { initializeApp } from 'firebase/app';
-        // import { getFirestore } from 'firebase/firestore';
-        // import { getAuth, signInWithCustomToken } from 'firebase/auth';
-        // 
-        // this.app = initializeApp(firebaseConfig);
-        // this.db = getFirestore(this.app);
-        // this.auth = getAuth(this.app);
-        // await signInWithCustomToken(this.auth, this.customToken);
+        
+        
+        this.app = initializeApp(firebaseConfig);
+        this.db = getFirestore(this.app);
+        this.auth = getAuth(this.app);
+        await signInWithCustomToken(this.auth, this.customToken);
         
         console.log('🔥 Firebase initialized with custom token for PRODUCTION');
         console.log('🔐 User authenticated via Python bot');
@@ -91,87 +92,58 @@ class FirebaseService {
   }
 
   async saveToFirebase(userId, userData) {
-    try {
-      // In production with real Firebase SDK and authentication:
-      // const userRef = doc(this.db, 'users', userId.toString());
-      // const userDoc = {
-      //   userId: userId,
-      //   points: userData.points,
-      //   level: userData.level,
-      //   lastPlayed: serverTimestamp(),
-      //   gamesPlayed: userData.gamesPlayed,
-      //   updatedAt: serverTimestamp(),
-      //   ...(userData.createdAt && { createdAt: serverTimestamp() })
-      // };
-      // await setDoc(userRef, userDoc, { merge: true });
-      
-      console.log('🔥 Saving to Firebase with authentication:', userData);
-      
-      // For demo, save to localStorage with Firebase structure
-      const userDoc = {
-        userId: userId,
-        points: userData.points,
-        level: userData.level,
-        lastPlayed: new Date().toISOString(),
-        gamesPlayed: userData.gamesPlayed || 0,
-        createdAt: userData.createdAt || new Date().toISOString(),
+  try {
+    const userRef = doc(this.db, 'users', userId.toString());
+    const userDoc = {
+      userId,
+      points: userData.points,
+      level: userData.level,
+      lastPlayed: serverTimestamp(),
+      gamesPlayed: userData.gamesPlayed,
+      updatedAt: serverTimestamp(),
+      ...(userData.createdAt && { createdAt: serverTimestamp() }) // only set on first save
+    };
+
+    await setDoc(userRef, userDoc, { merge: true });
+    console.log('🔥 Saved to Firestore:', userDoc);
+
+    return { success: true, method: 'Firebase (authenticated)' };
+  } catch (error) {
+    console.error('Firebase save failed:', error);
+    throw error;
+  }
+}
+
+ async getFromFirebase(userId) {
+  try {
+    const userRef = doc(this.db, 'users', userId.toString());
+    const docSnap = await getDoc(userRef);
+
+    if (docSnap.exists()) {
+      console.log('🔥 User data loaded from Firestore:', docSnap.data());
+      return docSnap.data();
+    } else {
+      // If no data exists yet, create a new user record
+      const newUser = {
+        userId,
+        points: 0,
+        level: 1,
+        gamesPlayed: 0,
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        source: 'Firebase (authenticated)',
+        lastPlayed: new Date().toISOString(),
+        source: 'Firebase (new)',
         authenticated: !!this.customToken
       };
-      
-      localStorage.setItem(`firebase_user_${userId}`, JSON.stringify(userDoc));
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      return { success: true, method: 'Firebase (authenticated)' };
-    } catch (error) {
-      console.error('Firebase save failed:', error);
-      throw error;
-    }
-  }
 
-  async getFromFirebase(userId) {
-    try {
-      // In production with real Firebase SDK:
-      // const userRef = doc(this.db, 'users', userId.toString());
-      // const docSnap = await getDoc(userRef);
-      // if (docSnap.exists()) {
-      //   return docSnap.data();
-      // }
-      
-      console.log('🔥 Loading from Firebase for authenticated user:', userId);
-      
-      // For demo, try to load from localStorage
-      const saved = localStorage.getItem(`firebase_user_${userId}`);
-      
-      if (saved) {
-        const userData = JSON.parse(saved);
-        console.log('📦 Found existing authenticated user data:', userData);
-        return { ...userData, source: 'Firebase (authenticated cached)' };
-      } else {
-        // Create new authenticated user
-        const newUser = {
-          userId: userId,
-          points: 0,
-          level: 1,
-          gamesPlayed: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          lastPlayed: new Date().toISOString(),
-          source: 'Firebase (authenticated new)',
-          authenticated: !!this.customToken
-        };
-        
-        console.log('👤 Created new authenticated user:', newUser);
-        return newUser;
-      }
-    } catch (error) {
-      console.error('Firebase get failed:', error);
-      throw error;
+      console.log('👤 New Firebase user created:', newUser);
+      return newUser;
     }
+  } catch (error) {
+    console.error('Firebase get failed:', error);
+    throw error;
   }
+}
 
   // localStorage methods (for development)
   async saveToLocalStorage(userId, userData) {
