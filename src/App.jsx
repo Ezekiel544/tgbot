@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, User, Wifi, WifiOff } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
+
       import { getFirestore } from 'firebase/firestore';
       import { getAuth, signInWithCustomToken } from 'firebase/auth';
       
