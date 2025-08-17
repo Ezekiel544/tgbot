@@ -371,10 +371,10 @@ const TelegramMiniApp = () => {
       return;
     }
 
-    if (isSaving) {
-      console.log('⏳ Save in progress, skipping tap');
-      return;
-    }
+    // if (isSaving) {
+    //   console.log('⏳ Save in progress, skipping tap');
+    //   return;
+    // }
 
     const pointsGained = level;
     const newPoints = points + pointsGained;
@@ -548,13 +548,20 @@ const TelegramMiniApp = () => {
 
         {/* Main Game Button */}
         <div className="flex justify-center mb-8">
-          <button
+          {/* <button
             onClick={handleTap}
             disabled={isSaving || !isOnline}
             className={`relative w-48 h-48 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full shadow-2xl transform transition-all duration-150 hover:scale-105 active:scale-95 ${
               clickAnimation ? 'scale-110' : ''
             } ${isSaving || !isOnline ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
-          >
+          > */}
+          <button 
+  onClick={handleTap} 
+  disabled={!isOnline}  // ← Remove "isSaving ||" 
+  className={`relative w-48 h-48 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full shadow-2xl transform transition-all duration-150 hover:scale-105 active:scale-95 ${
+    clickAnimation ? 'scale-110' : ''
+  } ${!isOnline ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}  // ← Remove "isSaving ||"
+>
             <div className="absolute inset-4 bg-white/20 rounded-full flex items-center justify-center">
               <div className="text-center">
                 <Zap className="w-12 h-12 text-white mx-auto mb-2" />
@@ -600,14 +607,14 @@ const TelegramMiniApp = () => {
         )}
 
         {/* Save Status */}
-        {isSaving && (
+        {/* {isSaving && (
           <div className="fixed bottom-4 left-4 right-4 bg-green-500/90 backdrop-blur-sm rounded-lg p-3 z-50">
             <div className="flex items-center justify-center space-x-2">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               <span className="text-sm">Saving to Firebase...</span>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Firebase Connection Indicator */}
         <div className="fixed top-4 right-4 bg-black/30 backdrop-blur-sm rounded-lg px-3 py-1">
