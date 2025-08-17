@@ -1,11 +1,11 @@
-// Fixed Firebase Service Implementation
+// Fixed Firebase Service Implementation with Proper Auth Configuration
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, User, Wifi, WifiOff } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
-import { getAuth, signInWithCustomToken, signInAnonymously } from 'firebase/auth';
+import { getAuth, signInWithCustomToken, signInAnonymously, connectAuthEmulator } from 'firebase/auth';
 
-// Firebase configuration
+// Firebase configuration - MAKE SURE THIS MATCHES YOUR PROJECT
 const firebaseConfig = {
   apiKey: "AIzaSyDx77ZNDIT-56mHzwQp6wglRURUZGg-KS0",
   authDomain: "tgbot-4d504.firebaseapp.com",
@@ -23,6 +23,7 @@ class FirebaseService {
     this.db = null;
     this.auth = null;
     this.customToken = this.getCustomTokenFromURL();
+    this.authInitialized = false;
   }
 
   getCustomTokenFromURL() {
@@ -40,45 +41,70 @@ class FirebaseService {
     try {
       console.log('🔥 Initializing Firebase...');
       
-      // Initialize Firebase
+      // Initialize Firebase App
       this.app = initializeApp(firebaseConfig);
       this.db = getFirestore(this.app);
       this.auth = getAuth(this.app);
+      
+      // Important: Wait for auth to be ready
+      await new Promise((resolve) => {
+        const unsubscribe = this.auth.onAuthStateChanged((user) => {
+          console.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
+          unsubscribe();
+          resolve();
+        });
+      });
       
       // Authenticate user
       if (this.customToken) {
         try {
           console.log('🔐 Signing in with custom token...');
-          await signInWithCustomToken(this.auth, this.customToken);
-          console.log('✅ Authenticated with custom token');
+          const result = await signInWithCustomToken(this.auth, this.customToken);
+          console.log('✅ Authenticated with custom token:', result.user.uid);
         } catch (authError) {
-          console.warn('⚠️ Custom token auth failed, falling back to anonymous:', authError);
-          await signInAnonymously(this.auth);
+          console.warn('⚠️ Custom token auth failed:', authError);
+          console.log('🔐 Falling back to anonymous authentication...');
+          const result = await signInAnonymously(this.auth);
+          console.log('✅ Anonymous authentication successful:', result.user.uid);
         }
       } else {
-        console.log('🔐 Signing in anonymously...');
-        await signInAnonymously(this.auth);
+        console.log('🔐 No custom token, signing in anonymously...');
+        const result = await signInAnonymously(this.auth);
+        console.log('✅ Anonymous authentication successful:', result.user.uid);
       }
       
       console.log('✅ Firebase initialized successfully');
       console.log('👤 Current user:', this.auth.currentUser?.uid);
       
       this.initialized = true;
+      this.authInitialized = true;
     } catch (error) {
       console.error('❌ Firebase initialization failed:', error);
-      throw error;
+      // Don't throw error, try to work without auth
+      if (!this.db) {
+        throw error;
+      }
     }
   }
 
-  async saveUserProgress(userId, userData) {
+  async ensureAuth() {
+    if (!this.authInitialized || !this.auth.currentUser) {
+      console.log('🔄 Re-initializing authentication...');
+      await this.init();
+    }
+    
+    if (!this.auth.currentUser) {
+      console.log('🔐 Force anonymous sign in...');
+      await signInAnonymously(this.auth);
+    }
+  }
+
+  async saveUserProgress(userId, userData, userInfo = {}) {
     try {
       await this.init();
+      await this.ensureAuth();
       
-      if (!this.auth.currentUser) {
-        throw new Error('User not authenticated');
-      }
-      
-      console.log('💾 Saving user progress...', { userId, userData });
+      console.log('💾 Saving user progress...', { userId, userData, userInfo });
       
       const userRef = doc(this.db, 'users', userId.toString());
       
@@ -91,6 +117,14 @@ class FirebaseService {
         updatedAt: serverTimestamp()
       };
       
+      // Add user info (name and username) if provided
+      if (userInfo.first_name) {
+        userDoc.firstName = userInfo.first_name;
+      }
+      if (userInfo.username) {
+        userDoc.username = userInfo.username;
+      }
+      
       // Add createdAt only for new users
       if (userData.createdAt) {
         userDoc.createdAt = serverTimestamp();
@@ -99,7 +133,7 @@ class FirebaseService {
       // Use merge: true to update existing document or create new one
       await setDoc(userRef, userDoc, { merge: true });
       
-      console.log('✅ User progress saved successfully');
+      console.log('✅ User progress saved successfully with user info');
       return { success: true, method: 'Firebase' };
       
     } catch (error) {
@@ -126,37 +160,28 @@ class FirebaseService {
           points: data.points || 0,
           level: data.level || 1,
           gamesPlayed: data.gamesPlayed || 0,
+          firstName: data.firstName || null,
+          username: data.username || null,
           lastPlayed: data.lastPlayed?.toDate?.()?.toISOString() || new Date().toISOString(),
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           source: 'Firebase'
         };
       } else {
-        console.log('👤 Creating new user');
-        
-        // Create new user document
-        const newUser = {
-          userId: Number(userId),
-          points: 0,
-          level: 1,
-          gamesPlayed: 0,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          lastPlayed: serverTimestamp()
-        };
-        
-        await setDoc(userRef, newUser);
-        console.log('✅ New user created in Firebase');
+        console.log('👤 User not found, will create on first save');
         
         return {
           userId: Number(userId),
           points: 0,
           level: 1,
           gamesPlayed: 0,
+          firstName: null,
+          username: null,
           lastPlayed: new Date().toISOString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          source: 'Firebase (new)'
+          source: 'Firebase (new)',
+          isNewUser: true
         };
       }
     } catch (error) {
@@ -180,6 +205,8 @@ class FirebaseService {
         const data = doc.data();
         leaderboard.push({
           userId: data.userId,
+          firstName: data.firstName || 'Anonymous',
+          username: data.username || null,
           points: data.points || 0,
           level: data.level || 1,
           gamesPlayed: data.gamesPlayed || 0,
@@ -194,9 +221,9 @@ class FirebaseService {
       console.error('❌ Error getting leaderboard:', error);
       // Return demo data on error
       return [
-        { userId: 123456789, points: 1500, level: 16 },
-        { userId: 987654321, points: 1200, level: 13 },
-        { userId: 456789123, points: 800, level: 9 }
+        { userId: 123456789, firstName: 'Demo Player', username: 'demo_user', points: 1500, level: 16 },
+        { userId: 987654321, firstName: 'Test User', username: 'test_user', points: 1200, level: 13 },
+        { userId: 456789123, firstName: 'Sample Player', username: 'sample_user', points: 800, level: 9 }
       ];
     }
   }
@@ -220,6 +247,7 @@ const TelegramMiniApp = () => {
   const [lastPlayed, setLastPlayed] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
   const [saveError, setSaveError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('Connecting...');
 
   // Get Telegram user with better error handling
   const getTelegramUser = () => {
@@ -281,11 +309,14 @@ const TelegramMiniApp = () => {
     const initApp = async () => {
       try {
         console.log('🚀 Initializing app...');
+        setConnectionStatus('Getting user info...');
         
         const telegramUser = getTelegramUser();
         setUser(telegramUser);
         
         console.log('📱 User ID:', telegramUser.id);
+        
+        setConnectionStatus('Connecting to Firebase...');
         
         // Load user progress from Firebase
         const progress = await firebaseService.getUserProgress(telegramUser.id);
@@ -298,10 +329,23 @@ const TelegramMiniApp = () => {
         setLastPlayed(progress.lastPlayed || null);
         
         setSaveError(null);
+        setConnectionStatus('Connected');
+        
+        // If it's a new user, create the initial document
+        if (progress.isNewUser) {
+          console.log('👤 Creating initial user document...');
+          await firebaseService.saveUserProgress(telegramUser.id, {
+            points: 0,
+            level: 1,
+            gamesPlayed: 0,
+            createdAt: true
+          }, telegramUser); // Pass the user info here too
+        }
         
       } catch (error) {
         console.error('❌ Failed to initialize app:', error);
         setSaveError(`Failed to load progress: ${error.message}`);
+        setConnectionStatus('Connection failed');
         
         // Set default values on error
         setPoints(0);
@@ -365,7 +409,8 @@ const TelegramMiniApp = () => {
           createdAt: !lastPlayed // Only set createdAt for new users
         };
         
-        await firebaseService.saveUserProgress(user.id, userData);
+        // Pass user info to save method
+        await firebaseService.saveUserProgress(user.id, userData, user);
         
         setLastPlayed(new Date().toISOString());
         
@@ -440,8 +485,12 @@ const TelegramMiniApp = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-800 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mb-4 mx-auto"></div>
-          <p className="text-white text-lg">Connecting to Firebase...</p>
+          <p className="text-white text-lg">{connectionStatus}</p>
           <p className="text-white/70 text-sm mt-2">Loading your game data</p>
+          <div className="text-white/50 text-xs mt-4">
+            {user && <p>User ID: {user.id}</p>}
+            <p>🔥 Firebase: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</p>
+          </div>
         </div>
       </div>
     );
@@ -571,7 +620,7 @@ const TelegramMiniApp = () => {
             <div className={`w-2 h-2 rounded-full ${
               isOnline && firebaseService.initialized ? 'bg-green-400' : 'bg-red-400'
             }`}></div>
-            <span className="text-xs text-white/80">🔥 Firebase</span>
+            <span className="text-xs text-white/80">🔥 {connectionStatus}</span>
           </div>
         </div>
       </div>
