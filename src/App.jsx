@@ -314,7 +314,8 @@ const HomePage = ({
           <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
             <span className="text-black font-bold text-lg">△</span>
           </div>
-          <span className="text-white font-medium">@{user?.username || 'testuser'}</span>
+          {/* <span className="text-white font-medium">@{user?.username || 'testuser'}</span> */}
+          <span className="text-white font-medium">Max_io</span>
           {/* <div className={`${rankInfo.color} rounded-full px-3 py-1`}> */}
             {/* <span className="text-white text-sm font-medium">{rankInfo.name}</span> */}
           {/* </div> */}
