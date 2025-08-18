@@ -241,7 +241,20 @@ const firebaseService = new FirebaseService();
 
 // Helper function to get rank info based on points
 const getRankInfo = (points) => {
-  if (points >= 150000) {
+  // if (points >= 150000) {
+  //   return { name: 'Legendary', color: 'bg-purple-600', multiplier: 6 };
+  // } else if (points >= 100000) {
+  //   return { name: 'Ultra Elite', color: 'bg-red-600', multiplier: 5 };
+  // } else if (points >= 50000) {
+  //   return { name: 'Royal Champion', color: 'bg-blue-600', multiplier: 4 };
+  // } else if (points >= 20000) {
+  //   return { name: 'Pro', color: 'bg-green-600', multiplier: 3 };
+  // } else if (points >= 10000) {
+  //   return { name: 'Classic', color: 'bg-yellow-600', multiplier: 2 };
+  // } else {
+  //   return { name: 'Beginner', color: 'bg-orange-500', multiplier: 1 };
+  // }
+    if (points >= 150000) {
     return { name: 'Legendary', color: 'bg-purple-600', multiplier: 6 };
   } else if (points >= 100000) {
     return { name: 'Ultra Elite', color: 'bg-red-600', multiplier: 5 };
@@ -302,9 +315,9 @@ const HomePage = ({
             <span className="text-black font-bold text-lg">△</span>
           </div>
           <span className="text-white font-medium">@{user?.username || 'testuser'}</span>
-          <div className={`${rankInfo.color} rounded-full px-3 py-1`}>
-            <span className="text-white text-sm font-medium">{rankInfo.name}</span>
-          </div>
+          {/* <div className={`${rankInfo.color} rounded-full px-3 py-1`}> */}
+            {/* <span className="text-white text-sm font-medium">{rankInfo.name}</span> */}
+          {/* </div> */}
         </div>
         <div className="text-white/60 text-sm">
           @{user?.username || 'testuser'}
@@ -793,7 +806,7 @@ const TelegramMiniApp = () => {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
       {/* Firebase Connection Indicator */}
-      <div className="absolute top-4 right-4 z-50 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
+      {/* <div className="absolute top-4 right-4 z-50 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
         <div className="flex items-center space-x-2">
           {isOnline && firebaseService.initialized ? (
             <Wifi className="w-3 h-3 text-green-400" />
@@ -805,7 +818,7 @@ const TelegramMiniApp = () => {
           }`}></div>
           <span className="text-xs text-white/80">{connectionStatus}</span>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col">
