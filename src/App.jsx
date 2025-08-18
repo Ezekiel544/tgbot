@@ -769,7 +769,7 @@ const TelegramMiniApp = () => {
             </div>
           )}
           <div className="text-white/50 text-xs mt-4">
-            <p>🔥 Firebase: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</p>
+            <p>🔥Database: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</p>
           </div>
         </div>
       </div>
