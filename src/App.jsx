@@ -655,19 +655,19 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 text-center p-6 pb-4">
-        <div className="flex items-center justify-center mb-3">
-          <Zap className="w-10 h-10 text-purple-400" />
+   <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Fixed Header - Reduced padding */}
+      <div className="flex-shrink-0 text-center p-4 pb-3">
+        <div className="flex items-center justify-center mb-2">
+          <Zap className="w-8 h-8 text-purple-400" />
         </div>
         <h2 className="text-xl font-bold text-white mb-1">Power Up</h2>
         <p className="text-white/60 text-sm">Increase your tapping power and earnings</p>
       </div>
 
-      {/* Scrollable Boosters List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="space-y-2">
+      {/* Scrollable Boosters List - Reduced padding */}
+      <div className="flex-1 overflow-y-auto px-3 pb-3">
+        <div className="space-y-1.5">
           {BOOSTERS.map((booster) => {
             const canAfford = points >= booster.cost;
             const isPurchased = purchasedBoosters?.includes(booster.id);
@@ -676,7 +676,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
             return (
               <div
                 key={booster.id}
-                className={`rounded-lg p-4 transition-all duration-300 ${
+                className={`rounded-lg p-3 transition-all duration-300 ${
                   isPurchased
                     ? 'bg-gray-800/30 border border-gray-600/30 opacity-60'
                     : canAfford
@@ -685,29 +685,29 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                 }`}
                 onClick={() => handleBoosterClick(booster)}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    {/* Booster Icon */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2.5">
+                    {/* Booster Icon - Smaller size */}
                     <div className={`w-10 h-10 ${isPurchased ? 'bg-gray-600' : booster.iconBg} rounded-full flex items-center justify-center`}>
                       {isPurchased ? (
-                        <Check className="w-6 h-6 text-white" />
+                        <Check className="w-4 h-4 text-white" />
                       ) : (
-                        <span className="text-xl">{booster.icon}</span>
+                        <span className="text-base">{booster.icon}</span>
                       )}
                     </div>
                     
-                    {/* Booster Info */}
+                    {/* Booster Info - Reduced font sizes */}
                     <div className="flex-1">
-                      <h3 className={`font-semibold  ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
+                      <h3 className={`font-semibold text-sm ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
                         {booster.title}
                       </h3>
-                      <p className="text-white/60 text-sm">
+                      <p className="text-white/60 text-xs leading-tight">
                         {booster.description}
                       </p>
                     </div>
                   </div>
                   
-                  {/* Cost */}
+                  {/* Cost - Smaller text */}
                   <div className="text-right">
                     <div className={`font-bold text-sm ${
                       isPurchased 
@@ -724,9 +724,9 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                   </div>
                 </div>
                 
-                {/* Buy Button */}
+                {/* Buy Button - Reduced padding */}
                 <button
-                  className={`w-full py-2 rounded-lg font-normal text-white transition-all duration-300 ${
+                  className={`w-full py-2 rounded-lg font-normal text-xs text-white transition-all duration-300 ${
                     isPurchased
                       ? 'bg-gray-600 cursor-not-allowed'
                       : canAfford
@@ -746,14 +746,14 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
           })}
         </div>
 
-        {/* Current Points Display */}
-        <div className="mt-3 bg-gray-800/30 rounded-lg p-4">
+        {/* Current Points Display - Reduced size */}
+        <div className="mt-2 bg-gray-800/30 rounded-lg p-3">
           <div className="flex items-center justify-center space-x-2">
-            <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-              <span className="text-black font-bold text-sm">$</span>
+            <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
+              <span className="text-black font-bold text-xs">$</span>
             </div>
-            <span className="text-white font-bold text-lg">{points.toLocaleString()}</span>
-            <span className="text-white/60">coins available</span>
+            <span className="text-white font-bold text-base">{points.toLocaleString()}</span>
+            <span className="text-white/60 text-sm">coins available</span>
           </div>
         </div>
       </div>
