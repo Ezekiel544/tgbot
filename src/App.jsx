@@ -5,7 +5,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, updateDoc, arrayUnion } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, signInAnonymously, connectAuthEmulator } from 'firebase/auth';
 import Maxlogo from './assets/logo.png'; // Import your logo here
-
+import { Youtube } from "lucide-react";
 // Firebase configuration - MAKE SURE THIS MATCHES YOUR PROJECT
 const firebaseConfig = {
   apiKey: "AIzaSyDx77ZNDIT-56mHzwQp6wglRURUZGg-KS0",
@@ -25,17 +25,17 @@ const TASKS = [
     reward: 5000,
     icon: '𝕏',
     iconBg: 'bg-blue-500',
-    url: 'https://twitter.com/your_account',
+    url: 'https://x.com/WAX_io',
     type: 'external'
   },
   {
-    id: 'tiktok_follow',
-    title: 'Follow on TikTok',
-    description: 'Follow us on TikTok',
+    id: 'youtube_follow',
+    title: 'Follow on youTube',
+    description: 'subscribe to our youTube channel',
     reward: 5000,
-    icon: '🎵',
+    icon: <Youtube className="w-6 h-6 text-red-600" />,
     iconBg: 'bg-pink-500',
-    url: 'https://tiktok.com/@your_account',
+    url: 'https://youtube.com/@wax_blockchain?si=g-2ctnRiQZqKm1GX',
     type: 'external'
   },
   {
@@ -45,18 +45,18 @@ const TASKS = [
     reward: 3000,
     icon: '❤️',
     iconBg: 'bg-red-500',
-    url: 'https://twitter.com/your_post',
+    url: 'https://x.com/WAX_io/status/1957809337252151644?',
     type: 'external'
   },
   {
-    id: 'telegram_channel',
-    title: 'Join Telegram',
-    description: 'Join our Telegram channel',
+    id: 'medium_channel',
+    title: 'Follow on Medium',
+    description: 'follow us on medium channel',
     reward: 7000,
     icon: '📢',
     iconBg: 'bg-blue-600',
-    url: 'https://t.me/your_channel',
-    type: 'telegram'
+    url: 'https://wax-io.medium.com/wharfkit-cloud-wallet-a-login-that-just-works-6392dd96ac6a',
+    type: 'external'
   }
 ];
 
@@ -1056,7 +1056,7 @@ const TelegramMiniApp = () => {
     const initApp = async () => {
       try {
         console.log('🚀 Initializing app...');
-        setConnectionStatus('Getting user info...');
+        setConnectionStatus('coming up...');
         
         const telegramUser = getTelegramUser();
         setUser(telegramUser);
