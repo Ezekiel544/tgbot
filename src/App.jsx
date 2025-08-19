@@ -396,7 +396,7 @@ const HomePage = ({
         
         {/* Energy Info */}
         <div className="text-center">
-          <p className="text-white/60 text-sm">{tapsLeft} taps left</p>
+          {/* <p className="text-white/60 text-sm">{tapsLeft} taps left</p> */}
           <p className="text-white/60 text-sm">{formatCountdownTimer(energy, maxEnergy)}</p>
         </div>
       </div>
