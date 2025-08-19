@@ -667,7 +667,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
 
       {/* Scrollable Boosters List */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="space-y-4">
+        <div className="space-y-2">
           {BOOSTERS.map((booster) => {
             const canAfford = points >= booster.cost;
             const isPurchased = purchasedBoosters?.includes(booster.id);
@@ -688,7 +688,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     {/* Booster Icon */}
-                    <div className={`w-12 h-12 ${isPurchased ? 'bg-gray-600' : booster.iconBg} rounded-full flex items-center justify-center`}>
+                    <div className={`w-10 h-10 ${isPurchased ? 'bg-gray-600' : booster.iconBg} rounded-full flex items-center justify-center`}>
                       {isPurchased ? (
                         <Check className="w-6 h-6 text-white" />
                       ) : (
@@ -698,7 +698,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                     
                     {/* Booster Info */}
                     <div className="flex-1">
-                      <h3 className={`font-bold text-lg ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
+                      <h3 className={`font-semibold  ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
                         {booster.title}
                       </h3>
                       <p className="text-white/60 text-sm">
@@ -709,7 +709,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                   
                   {/* Cost */}
                   <div className="text-right">
-                    <div className={`font-bold text-lg ${
+                    <div className={`font-bold text-sm ${
                       isPurchased 
                         ? 'text-green-400' 
                         : canAfford 
@@ -726,7 +726,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                 
                 {/* Buy Button */}
                 <button
-                  className={`w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 ${
+                  className={`w-full py-2 rounded-lg font-normal text-white transition-all duration-300 ${
                     isPurchased
                       ? 'bg-gray-600 cursor-not-allowed'
                       : canAfford
@@ -747,7 +747,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
         </div>
 
         {/* Current Points Display */}
-        <div className="mt-6 bg-gray-800/30 rounded-lg p-4">
+        <div className="mt-3 bg-gray-800/30 rounded-lg p-4">
           <div className="flex items-center justify-center space-x-2">
             <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
               <span className="text-black font-bold text-sm">$</span>
