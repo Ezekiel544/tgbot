@@ -4,7 +4,7 @@ import { Trophy, Star, Zap, User, Wifi, WifiOff, Home, DollarSign, HelpCircle } 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, signInAnonymously, connectAuthEmulator } from 'firebase/auth';
-
+import Maxlogo from './assets/logo.png'; // Import your logo here
 // Firebase configuration - MAKE SURE THIS MATCHES YOUR PROJECT
 const firebaseConfig = {
   apiKey: "AIzaSyDx77ZNDIT-56mHzwQp6wglRURUZGg-KS0",
@@ -311,8 +311,9 @@ const HomePage = ({
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-            <span className="text-black font-bold text-lg">△</span>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center">
+            {/* <span className="text-black font-bold text-lg">△</span> */}
+            <span ><img src={Maxlogo} alt="Max_io" /></span>
           </div>
           {/* <span className="text-white font-medium">@{user?.username || 'testuser'}</span> */}
           <span className="text-white font-medium">Max_io</span>
@@ -350,7 +351,7 @@ const HomePage = ({
       </div>
 
       {/* Main Tap Button */}
-      <div className="flex-1 flex items-center justify-center px-8">
+      <div className="flex-1 flex items-center justify-center px-8 ">
         <div 
           className={`relative w-48 h-48 cursor-pointer transition-all duration-150 ${
             clickAnimation ? 'scale-105' : 'scale-100'
@@ -358,15 +359,15 @@ const HomePage = ({
           onClick={isOnline && energy > 0 ? handleTap : undefined}
         >
           {/* Outer white border */}
-          <div className="absolute inset-0 rounded-full border-3 border-white/30"></div>
+          <div className="absolute inset-0 rounded-full border-3 border-white/30 "><img src={Maxlogo} calt="" srcset="" className='right-3 top-2 absolute'/></div>
           
           {/* Main black circle */}
-          <div className="absolute inset-3 bg-black rounded-full flex items-center justify-center">
-            {/* Inner circle with triangle */}
+          {/* <div className="absolute inset-3 bg-black rounded-full flex items-center justify-center">
+            Inner circle with triangle
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
               <div className="w-0 h-0 border-l-4 border-r-4 border-b-6 border-l-transparent border-r-transparent border-b-white"></div>
             </div>
-          </div>
+          </div> */}
 
           {/* Click animation */}
           {clickAnimation && (
@@ -571,7 +572,7 @@ const TelegramMiniApp = () => {
         
         console.log('📱 User ID:', telegramUser.id);
         
-        setConnectionStatus('Connecting to Firebase...');
+        // setConnectionStatus('Connecting to Firebase...');
         
         // Load user progress from Firebase
         const progress = await firebaseService.getUserProgress(telegramUser.id);
@@ -768,8 +769,9 @@ const TelegramMiniApp = () => {
               <p>@{user.username || 'N/A'}</p>
             </div>
           )}
-          <div className="text-white/50 text-xs mt-4">
-            <p>🔥Database: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</p>
+          <div className="text-white/50 text-xs mt-4 flex items-center justify-center space-x-2">
+          <img src={Maxlogo} alt="" srcset="" className='w-6 h-5'/>
+            <span> Max_io: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</span>
           </div>
         </div>
       </div>
