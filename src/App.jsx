@@ -1,6 +1,6 @@
 // Enhanced Firebase Service Implementation with New UI Design
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Zap, User, Wifi, WifiOff, Home, DollarSign, HelpCircle, Crown, Award, Medal } from 'lucide-react';
+import { Trophy, Star, Zap, User, Wifi, WifiOff, Home, DollarSign, HelpCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, signInAnonymously, connectAuthEmulator } from 'firebase/auth';
@@ -226,12 +226,7 @@ class FirebaseService {
       return [
         { userId: 123456789, firstName: 'Demo Player', username: 'demo_user', points: 1500, level: 16 },
         { userId: 987654321, firstName: 'Test User', username: 'test_user', points: 1200, level: 13 },
-        { userId: 456789123, firstName: 'Sample Player', username: 'sample_user', points: 800, level: 9 },
-        { userId: 789123456, firstName: 'Another Player', username: 'another_user', points: 750, level: 8 },
-        { userId: 321654987, firstName: 'New Player', username: 'new_user', points: 500, level: 6 },
-        { userId: 654987321, firstName: 'Beginner Player', username: 'beginner_user', points: 300, level: 4 },
-        { userId: 159753486, firstName: 'Novice Player', username: 'novice_user', points: 200, level: 3 },
-        { userId: 357159852, firstName: 'Rookie Player', username: 'rookie_user', points: 100, level: 2 }
+        { userId: 456789123, firstName: 'Sample Player', username: 'sample_user', points: 800, level: 9 }
       ];
     }
   }
@@ -246,7 +241,20 @@ const firebaseService = new FirebaseService();
 
 // Helper function to get rank info based on points
 const getRankInfo = (points) => {
-  if (points >= 150000) {
+  // if (points >= 150000) {
+  //   return { name: 'Legendary', color: 'bg-purple-600', multiplier: 6 };
+  // } else if (points >= 100000) {
+  //   return { name: 'Ultra Elite', color: 'bg-red-600', multiplier: 5 };
+  // } else if (points >= 50000) {
+  //   return { name: 'Royal Champion', color: 'bg-blue-600', multiplier: 4 };
+  // } else if (points >= 20000) {
+  //   return { name: 'Pro', color: 'bg-green-600', multiplier: 3 };
+  // } else if (points >= 10000) {
+  //   return { name: 'Classic', color: 'bg-yellow-600', multiplier: 2 };
+  // } else {
+  //   return { name: 'Beginner', color: 'bg-orange-500', multiplier: 1 };
+  // }
+    if (points >= 150000) {
     return { name: 'Legendary', color: 'bg-purple-600', multiplier: 6 };
   } else if (points >= 100000) {
     return { name: 'Ultra Elite', color: 'bg-red-600', multiplier: 5 };
@@ -306,7 +314,11 @@ const HomePage = ({
           <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
             <span className="text-black font-bold text-lg">△</span>
           </div>
+          {/* <span className="text-white font-medium">@{user?.username || 'testuser'}</span> */}
           <span className="text-white font-medium">Max_io</span>
+          {/* <div className={`${rankInfo.color} rounded-full px-3 py-1`}> */}
+            {/* <span className="text-white text-sm font-medium">{rankInfo.name}</span> */}
+          {/* </div> */}
         </div>
         <div className="text-white/60 text-sm">
           @{user?.username || 'testuser'}
@@ -392,81 +404,15 @@ const HomePage = ({
 };
 
 // Leaderboard Page Component
-const LeaderboardPage = ({ leaderboard, user }) => {
-  // Sort leaderboard by points in descending order
-  const sortedLeaderboard = [...leaderboard].sort((a, b) => b.points - a.points);
-
-  return (
-    <div className="flex-1 p-4">
-      <div className="text-center mb-6">
-        <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-2" />
-        <h2 className="text-2xl font-bold text-white mb-1">Leaderboard</h2>
-        <p className="text-white/60 text-sm">Top players by points</p>
-      </div>
-
-      {sortedLeaderboard.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-white/60">No players found</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sortedLeaderboard.map((player, index) => {
-            const isCurrentUser = user && player.userId === user.id;
-            
-            return (
-              <div 
-                key={player.userId} 
-                className={`flex items-center justify-between p-4 rounded-xl ${
-                  isCurrentUser 
-                    ? 'bg-yellow-400/20 border border-yellow-400/30' 
-                    : 'bg-gray-800/50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    {index === 0 ? (
-                      <Crown className="w-6 h-6 text-yellow-400" />
-                    ) : index === 1 ? (
-                      <Award className="w-6 h-6 text-gray-300" />
-                    ) : index === 2 ? (
-                      <Medal className="w-6 h-6 text-amber-600" />
-                    ) : (
-                      <span className="text-white/60 font-medium text-sm">
-                        #{index + 1}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium truncate ${
-                      isCurrentUser ? 'text-yellow-400' : 'text-white'
-                    }`}>
-                      {player.firstName || 'Anonymous'}
-                    </p>
-                    {player.username && (
-                      <p className="text-white/60 text-xs truncate">
-                        @{player.username}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
-                    <span className="text-black font-bold text-xs">$</span>
-                  </div>
-                  <span className="text-white font-semibold">
-                    {player.points.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+const LeaderboardPage = () => (
+  <div className="flex-1 p-6">
+    <div className="text-center">
+      <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+      <h2 className="text-2xl font-bold text-white mb-2">Leaderboard</h2>
+      <p className="text-white/60">Coming Soon...</p>
     </div>
-  );
-};
+  </div>
+);
 
 // Earn Page Component
 const EarnPage = () => (
@@ -497,6 +443,7 @@ const BottomNavigation = ({ currentPage, setCurrentPage }) => {
     { id: 'leaderboard', label: 'LEADERBOARD', icon: Trophy },
     { id: 'earn', label: 'EARN', icon: DollarSign },
     { id: 'booster', label: 'BOOSTER', icon: Zap },
+    // { id: 'help', label: '', icon: HelpCircle }
   ];
 
   return (
@@ -527,7 +474,7 @@ const BottomNavigation = ({ currentPage, setCurrentPage }) => {
 };
 
 const TelegramMiniApp = () => {
-  const [points, setPoints] = useState(0);
+  const [points, setPoints] = useState(0); // Changed from 50 to 0
   const [level, setLevel] = useState(1);
   const [clickAnimation, setClickAnimation] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -538,10 +485,10 @@ const TelegramMiniApp = () => {
   const [isOnline, setIsOnline] = useState(true);
   const [saveError, setSaveError] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
-  const [currentPage, setCurrentPage] = useState('default');
+  const [currentPage, setCurrentPage] = useState('default'); // Navigation state
   const [leaderboard, setLeaderboard] = useState([]);
   const [userPosition, setUserPosition] = useState(null);
-  const [energy, setEnergy] = useState(1000);
+  const [energy, setEnergy] = useState(1000); // Start with max energy
 
   // Get Telegram user with better error handling
   const getTelegramUser = () => {
@@ -602,7 +549,7 @@ const TelegramMiniApp = () => {
   // Load leaderboard and calculate user position
   const loadLeaderboard = async (currentUserId) => {
     try {
-      const leaderboardData = await firebaseService.getLeaderboard(100);
+      const leaderboardData = await firebaseService.getLeaderboard(100); // Get more entries for position calculation
       setLeaderboard(leaderboardData);
       
       // Find user position
@@ -631,7 +578,7 @@ const TelegramMiniApp = () => {
         
         console.log('📊 Loaded progress:', progress);
         
-        setPoints(progress.points || 0);
+        setPoints(progress.points || 0); // Changed from 50 to 0
         setLevel(progress.level || 1);
         setGamesPlayed(progress.gamesPlayed || 0);
         setEnergy(progress.energy || 1000);
@@ -647,12 +594,12 @@ const TelegramMiniApp = () => {
         if (progress.isNewUser) {
           console.log('👤 Creating initial user document...');
           await firebaseService.saveUserProgress(telegramUser.id, {
-            points: 0,
+            points: 0, // Changed from 50 to 0
             level: 1,
             gamesPlayed: 0,
             energy: 1000,
             createdAt: true
-          }, telegramUser);
+          }, telegramUser); // Pass the user info here too
         }
         
       } catch (error) {
@@ -661,7 +608,7 @@ const TelegramMiniApp = () => {
         setConnectionStatus('Connection failed');
         
         // Set default values on error
-        setPoints(0);
+        setPoints(0); // Changed from 50 to 0
         setLevel(1);
         setGamesPlayed(0);
         setEnergy(1000);
@@ -692,11 +639,11 @@ const TelegramMiniApp = () => {
     }
 
     const rankInfo = getRankInfo(points);
-    const pointsGained = rankInfo.multiplier;
+    const pointsGained = rankInfo.multiplier; // Points gained based on current rank
     const newPoints = points + pointsGained;
     const newLevel = Math.floor(newPoints / 100) + 1;
     const newGamesPlayed = gamesPlayed + 1;
-    const newEnergy = energy - 1;
+    const newEnergy = energy - 1; // Reduce energy by 1 for each tap
     
     // Update UI immediately for better UX
     setPoints(newPoints);
@@ -726,7 +673,7 @@ const TelegramMiniApp = () => {
           level: newLevel,
           gamesPlayed: newGamesPlayed,
           energy: newEnergy,
-          createdAt: !lastPlayed
+          createdAt: !lastPlayed // Only set createdAt for new users
         };
         
         // Pass user info to save method
@@ -833,7 +780,7 @@ const TelegramMiniApp = () => {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'leaderboard':
-        return <LeaderboardPage leaderboard={leaderboard} user={user} />;
+        return <LeaderboardPage />;
       case 'earn':
         return <EarnPage />;
       case 'booster':
@@ -859,6 +806,21 @@ const TelegramMiniApp = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+      {/* Firebase Connection Indicator */}
+      {/* <div className="absolute top-4 right-4 z-50 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
+        <div className="flex items-center space-x-2">
+          {isOnline && firebaseService.initialized ? (
+            <Wifi className="w-3 h-3 text-green-400" />
+          ) : (
+            <WifiOff className="w-3 h-3 text-red-400" />
+          )}
+          <div className={`w-2 h-2 rounded-full ${
+            isOnline && firebaseService.initialized ? 'bg-green-400' : 'bg-red-400'
+          }`}></div>
+          <span className="text-xs text-white/80">{connectionStatus}</span>
+        </div>
+      </div> */}
+
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col">
         {renderCurrentPage()}
