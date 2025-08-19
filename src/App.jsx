@@ -1,10 +1,11 @@
-// Enhanced Firebase Service Implementation with Task System
+// Enhanced Firebase Service Implementation with Task System and Boosters
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, User, Wifi, WifiOff, Home, DollarSign, HelpCircle, ExternalLink, Check } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, updateDoc, arrayUnion } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, signInAnonymously, connectAuthEmulator } from 'firebase/auth';
 import Maxlogo from './assets/logo.png'; // Import your logo here
+
 // Firebase configuration - MAKE SURE THIS MATCHES YOUR PROJECT
 const firebaseConfig = {
   apiKey: "AIzaSyDx77ZNDIT-56mHzwQp6wglRURUZGg-KS0",
@@ -56,6 +57,43 @@ const TASKS = [
     iconBg: 'bg-blue-600',
     url: 'https://t.me/your_channel',
     type: 'telegram'
+  }
+];
+
+// Booster definitions
+const BOOSTERS = [
+  {
+    id: 'energy_booster',
+    title: 'Energy Booster',
+    description: 'Increase max energy to 6000',
+    cost: 50000,
+    icon: '⚡',
+    iconBg: 'bg-purple-600',
+    color: 'bg-purple-600',
+    benefit: 'maxEnergy',
+    value: 6000
+  },
+  {
+    id: 'multi_tap',
+    title: 'Multi Tap',
+    description: 'Earn 2 coins per tap',
+    cost: 100000,
+    icon: '$',
+    iconBg: 'bg-green-600',
+    color: 'bg-green-600',
+    benefit: 'coinsPerTap',
+    value: 2
+  },
+  {
+    id: 'auto_tap',
+    title: 'Auto Tap',
+    description: 'Earn coins automatically for 1 hour',
+    cost: 200000,
+    icon: '🤖',
+    iconBg: 'bg-orange-600',
+    color: 'bg-orange-600',
+    benefit: 'autoTap',
+    value: 1 // 1 hour
   }
 ];
 
@@ -160,6 +198,9 @@ class FirebaseService {
         energy: userData.energy || 1000,
         lastEnergyRefresh: userData.lastEnergyRefresh || Date.now(),
         completedTasks: userData.completedTasks || [],
+        purchasedBoosters: userData.purchasedBoosters || [],
+        maxEnergy: userData.maxEnergy || 1000,
+        coinsPerTap: userData.coinsPerTap || 1,
         lastPlayed: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -257,6 +298,9 @@ class FirebaseService {
           energy: data.energy || 1000,
           lastEnergyRefresh: data.lastEnergyRefresh || Date.now(),
           completedTasks: data.completedTasks || [],
+          purchasedBoosters: data.purchasedBoosters || [],
+          maxEnergy: data.maxEnergy || 1000,
+          coinsPerTap: data.coinsPerTap || 1,
           firstName: data.firstName || null,
           username: data.username || null,
           lastPlayed: data.lastPlayed?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -275,6 +319,9 @@ class FirebaseService {
           energy: 1000,
           lastEnergyRefresh: Date.now(),
           completedTasks: [],
+          purchasedBoosters: [],
+          maxEnergy: 1000,
+          coinsPerTap: 1,
           firstName: null,
           username: null,
           lastPlayed: new Date().toISOString(),
@@ -389,9 +436,9 @@ const HomePage = ({
   leaderboard,
   energy,
   setEnergy,
-  lastEnergyRefresh
+  lastEnergyRefresh,
+  maxEnergy
 }) => {
-  const maxEnergy = 1000;
   const tapsLeft = energy;
   
   const rankInfo = getRankInfo(points);
@@ -402,7 +449,7 @@ const HomePage = ({
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-full flex items-center justify-center">
-            <span ><img src={Maxlogo} alt="Max_io" /></span>
+            <span><img src={Maxlogo} alt="Max_io" /></span>
           </div>
           <span className="text-white font-medium">Max_io</span>
         </div>
@@ -447,8 +494,8 @@ const HomePage = ({
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center">
             <div className="w-44 h-44 bg-black rounded-full flex items-center justify-center">
               <div className=" rounded-full flex items-center justify-center">
-            <span ><img src={Maxlogo} alt="Max_io" className=' w-20 h-16 left-13 bottom-16 absolute' /></span>
-          </div>
+                <span><img src={Maxlogo} alt="Max_io" className=' w-20 h-16 left-13 bottom-16 absolute' /></span>
+              </div>
             </div>
           </div>
 
@@ -465,7 +512,7 @@ const HomePage = ({
           <div className="flex items-center space-x-2">
             <Zap className="w-5 h-5 text-yellow-400" />
             <span className="text-white font-bold text-lg">{energy}</span>
-            <span className="text-white/60">/ {1000}</span>
+            <span className="text-white/60">/ {maxEnergy}</span>
           </div>
         </div>
         
@@ -473,13 +520,13 @@ const HomePage = ({
         <div className="bg-gray-800 rounded-full h-3 mb-4">
           <div 
             className="bg-yellow-400 h-full rounded-full transition-all duration-300"
-            style={{ width: `${(energy / 1000) * 100}%` }}
+            style={{ width: `${(energy / maxEnergy) * 100}%` }}
           ></div>
         </div>
         
         {/* Energy Info */}
         <div className="text-center">
-          <p className="text-white/60 text-sm">{formatCountdownTimer(energy, 1000, lastEnergyRefresh)}</p>
+          <p className="text-white/60 text-sm">{formatCountdownTimer(energy, maxEnergy, lastEnergyRefresh)}</p>
         </div>
       </div>
     </div>
@@ -599,16 +646,120 @@ const LeaderboardPage = () => (
   </div>
 );
 
-// Booster Page Component
-const BoosterPage = () => (
-  <div className="flex-1 p-6">
-    <div className="text-center">
-      <Zap className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-      <h2 className="text-2xl font-bold text-white mb-2">Boosters</h2>
-      <p className="text-white/60">Boost your earning power!</p>
+// Enhanced Booster Page Component
+const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
+  const handleBoosterClick = (booster) => {
+    if (points >= booster.cost && !purchasedBoosters?.includes(booster.id)) {
+      onBoosterPurchase(booster);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 text-center p-6 pb-4">
+        <div className="flex items-center justify-center mb-3">
+          <Zap className="w-10 h-10 text-purple-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-1">Power Up</h2>
+        <p className="text-white/60 text-sm">Increase your tapping power and earnings</p>
+      </div>
+
+      {/* Scrollable Boosters List */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="space-y-4">
+          {BOOSTERS.map((booster) => {
+            const canAfford = points >= booster.cost;
+            const isPurchased = purchasedBoosters?.includes(booster.id);
+            const isClickable = canAfford && !isPurchased;
+            
+            return (
+              <div
+                key={booster.id}
+                className={`rounded-lg p-4 transition-all duration-300 ${
+                  isPurchased
+                    ? 'bg-gray-800/30 border border-gray-600/30 opacity-60'
+                    : canAfford
+                    ? `bg-gradient-to-r from-gray-800 to-gray-700 border border-gray-600 hover:scale-105 cursor-pointer`
+                    : 'bg-gray-800/30 border border-gray-700/30 opacity-50 cursor-not-allowed'
+                }`}
+                onClick={() => handleBoosterClick(booster)}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    {/* Booster Icon */}
+                    <div className={`w-12 h-12 ${isPurchased ? 'bg-gray-600' : booster.iconBg} rounded-full flex items-center justify-center`}>
+                      {isPurchased ? (
+                        <Check className="w-6 h-6 text-white" />
+                      ) : (
+                        <span className="text-xl">{booster.icon}</span>
+                      )}
+                    </div>
+                    
+                    {/* Booster Info */}
+                    <div className="flex-1">
+                      <h3 className={`font-bold text-lg ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
+                        {booster.title}
+                      </h3>
+                      <p className="text-white/60 text-sm">
+                        {booster.description}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Cost */}
+                  <div className="text-right">
+                    <div className={`font-bold text-lg ${
+                      isPurchased 
+                        ? 'text-green-400' 
+                        : canAfford 
+                        ? 'text-yellow-400' 
+                        : 'text-red-400'
+                    }`}>
+                      {isPurchased ? 'Owned' : `${booster.cost.toLocaleString()}`}
+                    </div>
+                    {!isPurchased && (
+                      <div className="text-white/60 text-xs">coins</div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Buy Button */}
+                <button
+                  className={`w-full py-3 rounded-lg font-semibold text-white transition-all duration-300 ${
+                    isPurchased
+                      ? 'bg-gray-600 cursor-not-allowed'
+                      : canAfford
+                      ? `${booster.color} hover:opacity-90 active:scale-95`
+                      : 'bg-gray-700 cursor-not-allowed opacity-50'
+                  }`}
+                  disabled={!isClickable}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleBoosterClick(booster);
+                  }}
+                >
+                  {isPurchased ? 'Owned' : canAfford ? 'Buy Booster' : `Need ${(booster.cost - points).toLocaleString()} more coins`}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Current Points Display */}
+        <div className="mt-6 bg-gray-800/30 rounded-lg p-4">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+              <span className="text-black font-bold text-sm">$</span>
+            </div>
+            <span className="text-white font-bold text-lg">{points.toLocaleString()}</span>
+            <span className="text-white/60">coins available</span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Bottom Navigation Component
 const BottomNavigation = ({ currentPage, setCurrentPage }) => {
@@ -665,8 +816,11 @@ const TelegramMiniApp = () => {
   const [lastEnergyRefresh, setLastEnergyRefresh] = useState(Date.now());
   const [completedTasks, setCompletedTasks] = useState([]);
   const [isProcessingTask, setIsProcessingTask] = useState(false);
+  const [purchasedBoosters, setPurchasedBoosters] = useState([]);
+  const [maxEnergy, setMaxEnergy] = useState(1000);
+  const [coinsPerTap, setCoinsPerTap] = useState(1);
 
-  const maxEnergy = 1000;
+  const originalMaxEnergy = 1000;
 
   // Get Telegram user with better error handling
   const getTelegramUser = () => {
@@ -734,7 +888,10 @@ const TelegramMiniApp = () => {
           gamesPlayed: userData.totalTaps || gamesPlayed,
           energy: userData.energy || energy,
           lastEnergyRefresh: userData.lastEnergyRefresh || lastEnergyRefresh,
-          completedTasks: completedTasks
+          completedTasks: completedTasks,
+          purchasedBoosters: purchasedBoosters,
+          maxEnergy: maxEnergy,
+          coinsPerTap: coinsPerTap
         };
         
         await firebaseService.saveUserProgress(user.id, dataToSave, user);
@@ -770,7 +927,7 @@ const TelegramMiniApp = () => {
     const interval = setInterval(checkEnergyRefresh, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, [lastEnergyRefresh, maxEnergy, user, energy, points, gamesPlayed]);
+  }, [lastEnergyRefresh, maxEnergy, user, energy, points, gamesPlayed, purchasedBoosters, coinsPerTap]);
 
   // Load leaderboard and calculate user position
   const loadLeaderboard = async (currentUserId) => {
@@ -783,6 +940,74 @@ const TelegramMiniApp = () => {
       setUserPosition(position || 'N/A');
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
+    }
+  };
+
+  // Handle booster purchase
+  const handleBoosterPurchase = async (booster) => {
+    if (points < booster.cost || purchasedBoosters.includes(booster.id)) {
+      return;
+    }
+
+    try {
+      const newPoints = points - booster.cost;
+      const newPurchasedBoosters = [...purchasedBoosters, booster.id];
+      
+      // Update local state immediately
+      setPoints(newPoints);
+      setPurchasedBoosters(newPurchasedBoosters);
+      
+      // Apply booster effects
+      switch (booster.benefit) {
+        case 'maxEnergy':
+          setMaxEnergy(booster.value);
+          setEnergy(booster.value); // Fill energy to new max
+          break;
+        case 'coinsPerTap':
+          setCoinsPerTap(booster.value);
+          break;
+        case 'autoTap':
+          // Auto tap implementation would go here
+          console.log('Auto tap activated for', booster.value, 'hour(s)');
+          break;
+      }
+      
+      // Save to Firebase
+      if (user) {
+        const userData = {
+          points: newPoints,
+          level: level,
+          gamesPlayed: gamesPlayed,
+          energy: booster.benefit === 'maxEnergy' ? booster.value : energy,
+          lastEnergyRefresh: lastEnergyRefresh,
+          completedTasks: completedTasks,
+          purchasedBoosters: newPurchasedBoosters,
+          maxEnergy: booster.benefit === 'maxEnergy' ? booster.value : maxEnergy,
+          coinsPerTap: booster.benefit === 'coinsPerTap' ? booster.value : coinsPerTap
+        };
+        
+        await firebaseService.saveUserProgress(user.id, userData, user);
+        
+        // Send to bot
+        sendDataToBot({
+          action: 'booster_purchased',
+          boosterId: booster.id,
+          cost: booster.cost,
+          points: newPoints,
+          benefit: booster.benefit,
+          value: booster.value
+        });
+      }
+      
+      console.log('✅ Booster purchased successfully:', booster.title);
+      
+    } catch (error) {
+      console.error('❌ Booster purchase failed:', error);
+      setSaveError(`Failed to purchase booster: ${error.message}`);
+      
+      // Revert changes on error
+      setPoints(points);
+      setPurchasedBoosters(purchasedBoosters);
     }
   };
 
@@ -849,6 +1074,9 @@ const TelegramMiniApp = () => {
         setEnergy(progress.energy || 1000);
         setLastEnergyRefresh(progress.lastEnergyRefresh || Date.now());
         setCompletedTasks(progress.completedTasks || []);
+        setPurchasedBoosters(progress.purchasedBoosters || []);
+        setMaxEnergy(progress.maxEnergy || 1000);
+        setCoinsPerTap(progress.coinsPerTap || 1);
         setLastPlayed(progress.lastPlayed || null);
         
         // Load leaderboard and user position
@@ -867,6 +1095,9 @@ const TelegramMiniApp = () => {
             energy: 1000,
             lastEnergyRefresh: Date.now(),
             completedTasks: [],
+            purchasedBoosters: [],
+            maxEnergy: 1000,
+            coinsPerTap: 1,
             createdAt: true
           }, telegramUser);
         }
@@ -883,6 +1114,9 @@ const TelegramMiniApp = () => {
         setEnergy(1000);
         setLastEnergyRefresh(Date.now());
         setCompletedTasks([]);
+        setPurchasedBoosters([]);
+        setMaxEnergy(1000);
+        setCoinsPerTap(1);
       } finally {
         setIsLoading(false);
       }
@@ -910,7 +1144,8 @@ const TelegramMiniApp = () => {
     }
 
     const rankInfo = getRankInfo(points);
-    const pointsGained = rankInfo.multiplier;
+    const basePointsGained = rankInfo.multiplier;
+    const pointsGained = basePointsGained * coinsPerTap; // Apply coins per tap multiplier
     const newPoints = points + pointsGained;
     const newLevel = Math.floor(newPoints / 100) + 1;
     const newGamesPlayed = gamesPlayed + 1;
@@ -946,6 +1181,9 @@ const TelegramMiniApp = () => {
           energy: newEnergy,
           lastEnergyRefresh: lastEnergyRefresh,
           completedTasks: completedTasks,
+          purchasedBoosters: purchasedBoosters,
+          maxEnergy: maxEnergy,
+          coinsPerTap: coinsPerTap,
           createdAt: !lastPlayed
         };
         
@@ -1010,6 +1248,7 @@ const TelegramMiniApp = () => {
           gamesPlayed: gamesPlayed,
           energy: energy,
           completedTasks: completedTasks,
+          purchasedBoosters: purchasedBoosters,
           sessionDuration: Date.now() - new Date(lastPlayed || Date.now()).getTime()
         });
       }
@@ -1026,7 +1265,7 @@ const TelegramMiniApp = () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       }
     };
-  }, [user, points, level, gamesPlayed, lastPlayed, energy, completedTasks]);
+  }, [user, points, level, gamesPlayed, lastPlayed, energy, completedTasks, purchasedBoosters]);
 
   if (isLoading) {
     return (
@@ -1043,8 +1282,8 @@ const TelegramMiniApp = () => {
           )}
           <div className="text-white/50 text-xs mt-4 flex items-center justify-center space-x-2">
             <div className="w-8 h-8 rounded-full flex items-center justify-center">
-            <span ><img src={Maxlogo} alt="Max_io" /></span>
-          </div>
+              <span><img src={Maxlogo} alt="Max_io" /></span>
+            </div>
             <span>Max_io: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</span>
           </div>
         </div>
@@ -1066,7 +1305,13 @@ const TelegramMiniApp = () => {
           />
         );
       case 'booster':
-        return <BoosterPage />;
+        return (
+          <BoosterPage 
+            points={points}
+            onBoosterPurchase={handleBoosterPurchase}
+            purchasedBoosters={purchasedBoosters}
+          />
+        );
       default:
         return (
           <HomePage
@@ -1082,6 +1327,7 @@ const TelegramMiniApp = () => {
             energy={energy}
             setEnergy={setEnergy}
             lastEnergyRefresh={lastEnergyRefresh}
+            maxEnergy={maxEnergy}
           />
         );
     }
@@ -1114,6 +1360,16 @@ const TelegramMiniApp = () => {
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
             <span className="text-sm">Completing task...</span>
           </div>
+        </div>
+      )}
+
+      {/* Booster Purchase Success Message */}
+      {isSaving && (
+        <div >
+          {/* <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            <span className="text-sm">Saving progress...</span>
+          </div> */}
         </div>
       )}
     </div>
