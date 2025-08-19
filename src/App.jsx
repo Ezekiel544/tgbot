@@ -1,4 +1,4 @@
-// Enhanced Firebase Service Implementation with New UI Design
+// Enhanced Firebase Service Implementation with Fixed Leaderboard
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, User, Wifi, WifiOff, Home, DollarSign, HelpCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
@@ -193,19 +193,35 @@ class FirebaseService {
     }
   }
 
+  // Fixed getLeaderboard method
   async getLeaderboard(limit = 10) {
     try {
       await this.init();
+      await this.ensureAuth(); // Make sure we're authenticated
       
       console.log('🏆 Loading leaderboard...');
+      console.log('🔐 Current auth state:', this.auth?.currentUser?.uid);
+      console.log('🔥 Firebase initialized:', this.initialized);
+      
+      if (!this.db) {
+        throw new Error('Firestore database not initialized');
+      }
       
       const usersRef = collection(this.db, 'users');
       const q = query(usersRef, orderBy('points', 'desc'), limit(limit));
       const querySnapshot = await getDocs(q);
       
+      console.log('📊 Query snapshot size:', querySnapshot.size);
+      
+      if (querySnapshot.empty) {
+        console.log('⚠️ No users found in database');
+        return [];
+      }
+      
       const leaderboard = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        console.log('👤 User data:', data);
         leaderboard.push({
           userId: data.userId,
           firstName: data.firstName || 'Anonymous',
@@ -222,12 +238,52 @@ class FirebaseService {
       
     } catch (error) {
       console.error('❌ Error getting leaderboard:', error);
-      // Return demo data on error
-      return [
-        { userId: 123456789, firstName: 'Demo Player', username: 'demo_user', points: 1500, level: 16 },
-        { userId: 987654321, firstName: 'Test User', username: 'test_user', points: 1200, level: 13 },
-        { userId: 456789123, firstName: 'Sample Player', username: 'sample_user', points: 800, level: 9 }
-      ];
+      console.error('❌ Error details:', error.code, error.message);
+      
+      // Don't return demo data - let the UI handle empty state
+      throw error;
+    }
+  }
+
+  // Debug function to check database content
+  async debugDatabase() {
+    try {
+      await this.init();
+      await this.ensureAuth();
+      
+      console.log('🔍 === DATABASE DEBUG START ===');
+      console.log('🔍 Auth user:', this.auth?.currentUser?.uid);
+      console.log('🔍 DB initialized:', this.initialized);
+      
+      // Get all users without any filters
+      const usersRef = collection(this.db, 'users');
+      const allUsersSnapshot = await getDocs(usersRef);
+      
+      console.log('🔍 Total users in database:', allUsersSnapshot.size);
+      
+      if (allUsersSnapshot.empty) {
+        console.log('🔍 ❌ NO USERS FOUND IN DATABASE!');
+        console.log('🔍 This means either:');
+        console.log('🔍 1. No users have been saved yet');
+        console.log('🔍 2. Users are being saved to a different collection');
+        console.log('🔍 3. There\'s an authentication issue');
+      } else {
+        console.log('🔍 ✅ Users found! Details:');
+        allUsersSnapshot.forEach((doc, index) => {
+          const data = doc.data();
+          console.log(`🔍 User ${index + 1}:`, {
+            docId: doc.id,
+            userId: data.userId,
+            firstName: data.firstName,
+            points: data.points,
+            level: data.level
+          });
+        });
+      }
+      
+      console.log('🔍 === DATABASE DEBUG END ===');
+    } catch (error) {
+      console.error('🔍 DEBUG ERROR:', error);
     }
   }
 
@@ -301,7 +357,7 @@ const HomePage = ({
           <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
             <span className="text-black font-bold text-lg">△</span>
           </div>
-          <span className="text-white font-medium">Max_io</span>
+          <span className="text-white font-medium">{user?.first_name || 'Max_io'}</span>
         </div>
         <div className="text-white/60 text-sm">
           @{user?.username || 'testuser'}
@@ -386,164 +442,86 @@ const HomePage = ({
   );
 };
 
-// Updated Leaderboard Page Component
-const LeaderboardPage = ({ leaderboard, currentUserId, loadLeaderboard }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Load leaderboard data when component mounts
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      if (leaderboard.length === 0) {
-        setIsLoading(true);
-        try {
-          await loadLeaderboard();
-        } catch (error) {
-          console.error('Failed to load leaderboard:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    fetchLeaderboard();
-  }, []);
+// Fixed Leaderboard Page Component
+const LeaderboardPage = ({ leaderboard, userPosition, user, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mb-4 mx-auto"></div>
+          <h2 className="text-2xl font-bold text-white mb-2">Loading Leaderboard...</h2>
+        </div>
+      </div>
+    );
+  }
 
-  const getRankColor = (position) => {
-    switch (position) {
-      case 1: return 'text-yellow-400'; // Gold
-      case 2: return 'text-gray-400'; // Silver  
-      case 3: return 'text-orange-400'; // Bronze
-      default: return 'text-white';
-    }
-  };
-
-  const getRankIcon = (position) => {
-    if (position <= 3) {
-      return '👑';
-    } else if (position <= 10) {
-      return '🏆';
-    } else {
-      return '🎯';
-    }
-  };
+  if (!leaderboard || leaderboard.length === 0) {
+    return (
+      <div className="flex-1 p-6">
+        <div className="text-center">
+          <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Leaderboard</h2>
+          <p className="text-white/60 mb-4">No players found yet.</p>
+          <p className="text-white/40 text-sm">Start playing to appear on the leaderboard!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 p-6">
-      {/* Header */}
       <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Trophy className="w-8 h-8 text-black" />
-        </div>
+        <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-white mb-2">Leaderboard</h2>
-        <p className="text-white/60">Top players worldwide</p>
+        <p className="text-white/60">Your rank: #{userPosition || 'N/A'}</p>
       </div>
-
-      {/* Loading State */}
-      {isLoading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent mx-auto mb-4"></div>
-          <p className="text-white/60">Loading leaderboard...</p>
-        </div>
-      ) : (
-        /* Leaderboard List */
-        <div className="space-y-3">
-          {leaderboard.length > 0 ? (
-            leaderboard.map((player, index) => {
-              const position = index + 1;
-              const isCurrentUser = player.userId === currentUserId;
-              
-              return (
-                <div
-                  key={player.userId}
-                  className={`bg-gray-800/50 rounded-lg p-4 border ${
-                    isCurrentUser 
-                      ? 'border-yellow-400 bg-yellow-400/10' 
-                      : 'border-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    {/* Left side - Position and User Info */}
-                    <div className="flex items-center space-x-4">
-                      {/* Position */}
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{getRankIcon(position)}</span>
-                        <span className={`text-xl font-bold ${getRankColor(position)}`}>
-                          #{position}
-                        </span>
-                      </div>
-                      
-                      {/* User Avatar and Info */}
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold">
-                            {player.firstName?.charAt(0)?.toUpperCase() || 'A'}
-                          </span>
-                        </div>
-                        
-                        <div>
-                          <p className={`font-semibold ${
-                            isCurrentUser ? 'text-yellow-400' : 'text-white'
-                          }`}>
-                            {player.firstName || 'Anonymous'}
-                            {isCurrentUser && ' (You)'}
-                          </p>
-                          {player.username && (
-                            <p className="text-sm text-white/60">
-                              @{player.username}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Right side - Points and Level */}
-                    <div className="text-right">
-                      <div className="flex items-center space-x-1 mb-1">
-                        <span className="text-yellow-400 font-bold text-lg">
-                          {player.points.toLocaleString()}
-                        </span>
-                        <span className="text-yellow-400">$</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-3 h-3 text-blue-400" />
-                        <span className="text-sm text-white/60">
-                          Level {player.level || 1}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+      
+      <div className="space-y-3">
+        {leaderboard.slice(0, 10).map((player, index) => {
+          const isCurrentUser = player.userId === user?.id;
+          const rankInfo = getRankInfo(player.points);
+          
+          return (
+            <div
+              key={player.userId}
+              className={`flex items-center justify-between p-4 rounded-lg ${
+                isCurrentUser ? 'bg-yellow-500/20 border border-yellow-400' : 'bg-gray-800'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                  index === 0 ? 'bg-yellow-400 text-black' :
+                  index === 1 ? 'bg-gray-300 text-black' :
+                  index === 2 ? 'bg-orange-400 text-black' :
+                  'bg-gray-600 text-white'
+                }`}>
+                  {index + 1}
                 </div>
-              );
-            })
-          ) : (
-            /* Empty State */
-            <div className="text-center py-8">
-              <Trophy className="w-12 h-12 text-white/30 mx-auto mb-4" />
-              <p className="text-white/60">No players found</p>
-              <p className="text-white/40 text-sm mt-2">Be the first to play and claim the top spot!</p>
+                
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-white font-semibold">
+                      {player.firstName || 'Anonymous'}
+                    </p>
+                    {isCurrentUser && (
+                      <span className="text-yellow-400 text-sm">(You)</span>
+                    )}
+                  </div>
+                  <p className="text-white/60 text-sm">
+                    @{player.username || 'N/A'} • Level {player.level}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <p className="text-white font-bold">{player.points}</p>
+                <p className={`text-xs px-2 py-1 rounded ${rankInfo.color} text-white`}>
+                  {rankInfo.name}
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Refresh Button */}
-      <div className="mt-6 text-center">
-        <button
-          onClick={async () => {
-            setIsLoading(true);
-            try {
-              await loadLeaderboard();
-            } catch (error) {
-              console.error('Failed to refresh leaderboard:', error);
-            } finally {
-              setIsLoading(false);
-            }
-          }}
-          disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-        >
-          {isLoading ? 'Refreshing...' : 'Refresh Leaderboard'}
-        </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -623,6 +601,7 @@ const TelegramMiniApp = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [userPosition, setUserPosition] = useState(null);
   const [energy, setEnergy] = useState(1000);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   // Get Telegram user with better error handling
   const getTelegramUser = () => {
@@ -680,20 +659,31 @@ const TelegramMiniApp = () => {
     };
   }, []);
 
-  // Load leaderboard and calculate user position
-  const loadLeaderboard = async (currentUserId = null) => {
+  // Fixed loadLeaderboard function
+  const loadLeaderboard = async (currentUserId) => {
     try {
+      console.log('🔄 Loading leaderboard for user:', currentUserId);
+      setLeaderboardLoading(true);
+      
       const leaderboardData = await firebaseService.getLeaderboard(100);
+      console.log('📊 Received leaderboard data:', leaderboardData);
+      
       setLeaderboard(leaderboardData);
       
       // Find user position
-      const userId = currentUserId || user?.id;
-      if (userId) {
-        const position = leaderboardData.findIndex(player => player.userId === userId) + 1;
-        setUserPosition(position || 'N/A');
-      }
+      const position = leaderboardData.findIndex(player => player.userId === currentUserId) + 1;
+      setUserPosition(position || 'N/A');
+      
+      console.log('🏆 User position:', position);
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
+      console.error('Error details:', error.code, error.message);
+      
+      // Set empty leaderboard instead of demo data
+      setLeaderboard([]);
+      setUserPosition('N/A');
+    } finally {
+      setLeaderboardLoading(false);
     }
   };
 
@@ -724,6 +714,10 @@ const TelegramMiniApp = () => {
         // Load leaderboard and user position
         await loadLeaderboard(telegramUser.id);
         
+        // Debug database content
+        console.log('🔍 Running database debug check...');
+        await firebaseService.debugDatabase();
+        
         setSaveError(null);
         setConnectionStatus('Connected');
         
@@ -737,6 +731,10 @@ const TelegramMiniApp = () => {
             energy: 1000,
             createdAt: true
           }, telegramUser);
+          
+          // After creating new user, reload leaderboard
+          console.log('🔄 Reloading leaderboard after new user creation...');
+          await loadLeaderboard(telegramUser.id);
         }
         
       } catch (error) {
@@ -776,11 +774,11 @@ const TelegramMiniApp = () => {
     }
 
     const rankInfo = getRankInfo(points);
-    const pointsGained = rankInfo.multiplier;
+    const pointsGained = rankInfo.multiplier; // Points gained based on current rank
     const newPoints = points + pointsGained;
     const newLevel = Math.floor(newPoints / 100) + 1;
     const newGamesPlayed = gamesPlayed + 1;
-    const newEnergy = energy - 1;
+    const newEnergy = energy - 1; // Reduce energy by 1 for each tap
     
     // Update UI immediately for better UX
     setPoints(newPoints);
@@ -810,7 +808,7 @@ const TelegramMiniApp = () => {
           level: newLevel,
           gamesPlayed: newGamesPlayed,
           energy: newEnergy,
-          createdAt: !lastPlayed
+          createdAt: !lastPlayed // Only set createdAt for new users
         };
         
         // Pass user info to save method
@@ -892,15 +890,37 @@ const TelegramMiniApp = () => {
     };
   }, [user, points, level, gamesPlayed, lastPlayed, energy]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mb-4 mx-auto"></div>
+          <p className="text-white text-lg">{connectionStatus}</p>
+          <p className="text-white/70 text-sm mt-2">Loading your game data</p>
+          {user && (
+            <div className="text-white/70 text-sm mt-4 space-y-1">
+              <p>👤 {user.first_name}</p>
+              <p>@{user.username || 'N/A'}</p>
+            </div>
+          )}
+          <div className="text-white/50 text-xs mt-4">
+            <p>🔥Database: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Render current page
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'leaderboard':
         return (
-          <LeaderboardPage 
+          <LeaderboardPage
             leaderboard={leaderboard}
-            currentUserId={user?.id}
-            loadLeaderboard={() => loadLeaderboard(user?.id)}
+            userPosition={userPosition}
+            user={user}
+            isLoading={leaderboardLoading}
           />
         );
       case 'earn':
@@ -926,29 +946,23 @@ const TelegramMiniApp = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mb-4 mx-auto"></div>
-          <p className="text-white text-lg">{connectionStatus}</p>
-          <p className="text-white/70 text-sm mt-2">Loading your game data</p>
-          {user && (
-            <div className="text-white/70 text-sm mt-4 space-y-1">
-              <p>👤 {user.first_name}</p>
-              <p>@{user.username || 'N/A'}</p>
-            </div>
-          )}
-          <div className="text-white/50 text-xs mt-4">
-            <p>🔥Database: {firebaseService.initialized ? 'Connected' : 'Connecting...'}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+      {/* Firebase Connection Indicator */}
+      <div className="absolute top-4 right-4 z-50 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2">
+        <div className="flex items-center space-x-2">
+          {isOnline && firebaseService.initialized ? (
+            <Wifi className="w-3 h-3 text-green-400" />
+          ) : (
+            <WifiOff className="w-3 h-3 text-red-400" />
+          )}
+          <div className={`w-2 h-2 rounded-full ${
+            isOnline && firebaseService.initialized ? 'bg-green-400' : 'bg-red-400'
+          }`}></div>
+          <span className="text-xs text-white/80">{connectionStatus}</span>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col">
         {renderCurrentPage()}
@@ -963,6 +977,16 @@ const TelegramMiniApp = () => {
           <div className="flex items-center space-x-2">
             <WifiOff className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm">{saveError}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Save Indicator */}
+      {isSaving && (
+        <div className="fixed bottom-20 left-4 right-4 bg-blue-500/90 backdrop-blur-sm rounded-lg p-3 z-50">
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            <span className="text-sm">Saving progress...</span>
           </div>
         </div>
       )}
