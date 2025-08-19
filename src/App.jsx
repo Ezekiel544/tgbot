@@ -667,7 +667,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
 
       {/* Scrollable Boosters List - Reduced padding */}
       <div className="flex-1 overflow-y-auto px-3 pb-3">
-        <div className="space-y-3">
+        <div className="space-y-4">
           {BOOSTERS.map((booster) => {
             const canAfford = points >= booster.cost;
             const isPurchased = purchasedBoosters?.includes(booster.id);
@@ -698,7 +698,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                     
                     {/* Booster Info - Reduced font sizes */}
                     <div className="flex-1">
-                      <h3 className={`font-semibold text-sm ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
+                      <h3 className={`font-semibold  ${isPurchased ? 'text-gray-400' : 'text-white'}`}>
                         {booster.title}
                       </h3>
                       <p className="text-white/60 text-xs leading-tight">
@@ -726,7 +726,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
                 
                 {/* Buy Button - Reduced padding */}
                 <button
-                  className={`w-full py-2 rounded-lg font-normal text-xs text-white transition-all duration-300 ${
+                  className={`w-full py-2 rounded-lg font-normal text-sm text-white transition-all duration-300 ${
                     isPurchased
                       ? 'bg-gray-600 cursor-not-allowed'
                       : canAfford
