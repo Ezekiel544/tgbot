@@ -667,7 +667,7 @@ const BoosterPage = ({ points, onBoosterPurchase, purchasedBoosters }) => {
 
       {/* Scrollable Boosters List - Reduced padding */}
       <div className="flex-1 overflow-y-auto px-3 pb-3">
-        <div className="space-y-1.5">
+        <div className="space-y-3">
           {BOOSTERS.map((booster) => {
             const canAfford = points >= booster.cost;
             const isPurchased = purchasedBoosters?.includes(booster.id);
